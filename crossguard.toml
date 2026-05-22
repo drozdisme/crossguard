@@ -1,0 +1,21 @@
+[tool.crossguard]
+# Paths to the contract pair under analysis
+l1_contract = "contracts/StarkBridge.sol"
+l2_contract  = "src/bridge.cairo"
+
+# Enabled detector sets: "all" | list of detector IDs
+detectors = ["all"]
+
+# Severity threshold: findings at this level or above cause CI to fail
+# Options: CRITICAL | HIGH | MEDIUM | LOW | NONE
+fail_on = "HIGH"
+
+# Output format: terminal | json | sarif | html
+output_format = "terminal"
+
+# Parser limits
+parser_timeout_ms = 30000
+max_path_depth    = 10
+
+# Terminal colour (disable for CI logs)
+color = true

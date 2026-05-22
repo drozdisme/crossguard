@@ -1,0 +1,146 @@
+{
+  "absolutePath": "contracts/Bridge.sol",
+  "nodeType": "SourceUnit",
+  "nodes": [
+    {
+      "nodeType": "ContractDefinition",
+      "name": "Bridge",
+      "nodes": [
+        {
+          "nodeType": "StateVariableDeclaration",
+          "variables": [{"name": "STARKNET_CORE", "typeName": {"name": "address"}}]
+        },
+        {
+          "nodeType": "StateVariableDeclaration",
+          "variables": [{"name": "L2_BRIDGE", "typeName": {"name": "uint256"}}]
+        },
+        {
+          "nodeType": "FunctionDefinition",
+          "name": "depositToL2",
+          "stateMutability": "payable",
+          "body": {
+            "nodeType": "Block",
+            "statements": [
+              {
+                "nodeType": "ExpressionStatement",
+                "expression": {
+                  "nodeType": "FunctionCall",
+                  "src": "312:120:0",
+                  "expression": {
+                    "nodeType": "FunctionCallOptions",
+                    "expression": {
+                      "nodeType": "MemberAccess",
+                      "memberName": "sendMessageToL2",
+                      "expression": {
+                        "nodeType": "FunctionCall",
+                        "expression": {
+                          "nodeType": "Identifier",
+                          "name": "IStarknetMessaging"
+                        },
+                        "arguments": [{"nodeType": "Identifier", "name": "STARKNET_CORE"}]
+                      }
+                    },
+                    "names": ["value"],
+                    "options": [
+                      {
+                        "nodeType": "MemberAccess",
+                        "memberName": "value",
+                        "expression": {"nodeType": "Identifier", "name": "msg"}
+                      }
+                    ]
+                  },
+                  "arguments": [
+                    {
+                      "nodeType": "Identifier",
+                      "name": "L2_BRIDGE",
+                      "typeDescriptions": {"typeString": "uint256"}
+                    },
+                    {
+                      "nodeType": "Identifier",
+                      "name": "DEPOSIT_SELECTOR"
+                    },
+                    {
+                      "nodeType": "FunctionCall",
+                      "src": "380:60:0",
+                      "arguments": [
+                        {
+                          "nodeType": "FunctionCall",
+                          "expression": {"nodeType": "Identifier", "name": "uint256"},
+                          "arguments": [{"nodeType": "Identifier", "name": "recipient"}],
+                          "typeDescriptions": {"typeString": "address"}
+                        },
+                        {
+                          "nodeType": "Identifier",
+                          "name": "amountLow",
+                          "typeDescriptions": {"typeString": "uint256"}
+                        },
+                        {
+                          "nodeType": "Identifier",
+                          "name": "amountHigh",
+                          "typeDescriptions": {"typeString": "uint256"}
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "nodeType": "FunctionDefinition",
+          "name": "depositToL2NoFee",
+          "stateMutability": "nonpayable",
+          "body": {
+            "nodeType": "Block",
+            "statements": [
+              {
+                "nodeType": "ExpressionStatement",
+                "expression": {
+                  "nodeType": "FunctionCall",
+                  "src": "580:110:0",
+                  "expression": {
+                    "nodeType": "MemberAccess",
+                    "memberName": "sendMessageToL2",
+                    "expression": {
+                      "nodeType": "FunctionCall",
+                      "expression": {"nodeType": "Identifier", "name": "IStarknetMessaging"},
+                      "arguments": [{"nodeType": "Identifier", "name": "STARKNET_CORE"}]
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "nodeType": "Identifier",
+                      "name": "L2_BRIDGE",
+                      "typeDescriptions": {"typeString": "uint256"}
+                    },
+                    {
+                      "nodeType": "Identifier",
+                      "name": "DEPOSIT_SELECTOR"
+                    },
+                    {
+                      "nodeType": "FunctionCall",
+                      "src": "640:50:0",
+                      "arguments": [
+                        {
+                          "nodeType": "Identifier",
+                          "name": "recipient",
+                          "typeDescriptions": {"typeString": "address"}
+                        },
+                        {
+                          "nodeType": "Identifier",
+                          "name": "amount",
+                          "typeDescriptions": {"typeString": "uint256"}
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
