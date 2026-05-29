@@ -169,9 +169,9 @@ Custom lightweight implementation:
 └────────────┬─────────────────────────┬──────────────┘
              │                         │
     ┌────────▼────────┐      ┌─────────▼──────────┐
-    │ SolidityParser   │      │  CairoParser       │
-    │ • Extract sends  │      │ • Extract handlers │
-    │ • Find fees      │      │ • Check validation │
+    │ SolidityParser  │      │  CairoParser       │
+    │ • Extract sends │      │ • Extract handlers │
+    │ • Find fees     │      │ • Check validation │
     └────────┬────────┘      └─────────┬──────────┘
              │                         │
              └────────────┬────────────┘

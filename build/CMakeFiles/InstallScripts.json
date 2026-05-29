@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/drozd/crossguard/build/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
