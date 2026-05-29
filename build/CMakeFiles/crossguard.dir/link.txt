@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcrossguard.a CMakeFiles/crossguard.dir/src/cairo_parser.cpp.o CMakeFiles/crossguard.dir/src/correlator.cpp.o CMakeFiles/crossguard.dir/src/detectors.cpp.o CMakeFiles/crossguard.dir/src/engine.cpp.o CMakeFiles/crossguard.dir/src/formatters.cpp.o CMakeFiles/crossguard.dir/src/json.cpp.o CMakeFiles/crossguard.dir/src/solidity_parser.cpp.o CMakeFiles/crossguard.dir/src/taint_engine.cpp.o
+/usr/bin/ranlib libcrossguard.a

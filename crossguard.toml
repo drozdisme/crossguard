@@ -1,21 +1,21 @@
 [tool.crossguard]
-# Paths to the contract pair under analysis
-l1_contract = "contracts/StarkBridge.sol"
-l2_contract  = "src/bridge.cairo"
+# L1 contract path (Solidity)
+# Supports: .sol (source), .json (AST)
+l1_contract = "contracts/Bridge.sol"
 
-# Enabled detector sets: "all" | list of detector IDs
-detectors = ["all"]
+# L2 contract path (Cairo)
+# Supports: .cairo (source), .json/.sierra (compiled)
+l2_contract = "src/bridge.cairo"
 
-# Severity threshold: findings at this level or above cause CI to fail
-# Options: CRITICAL | HIGH | MEDIUM | LOW | NONE
-fail_on = "HIGH"
-
-# Output format: terminal | json | sarif | html
+# Output format: terminal, json, sarif, html
 output_format = "terminal"
 
-# Parser limits
-parser_timeout_ms = 30000
-max_path_depth    = 10
+# Output file (optional, defaults to stdout)
+output_file = ""
 
-# Terminal colour (disable for CI logs)
+# Color output
 color = true
+
+# Exit with error code if findings meet severity threshold
+# Options: CRITICAL, HIGH, MEDIUM, LOW, NONE
+fail_on = "HIGH"

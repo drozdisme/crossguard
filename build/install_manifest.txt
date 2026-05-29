@@ -1,0 +1,17 @@
+/usr/local/bin/crossguard-cli
+/usr/local/include/json.hpp
+/usr/local/include/types.hpp
+/usr/local/include/taint_engine.hpp
+/usr/local/include/graph.hpp
+/usr/local/include/cairo_parser.hpp
+/usr/local/include/correlator.hpp
+/usr/local/include/engine.hpp
+/usr/local/include/solidity_parser.hpp
+/usr/local/include/formatters.hpp
+/usr/local/include/detectors.hpp
+/usr/local/share/crossguard/fixtures/bridge_contract.json
+/usr/local/share/crossguard/fixtures/StarkBridge_safe.sol
+/usr/local/share/crossguard/fixtures/bridge_safe.cairo
+/usr/local/share/crossguard/fixtures/Bridge_ast.json
+/usr/local/share/crossguard/fixtures/bridge_vuln.cairo
+/usr/local/share/crossguard/fixtures/StarkBridge_vuln.sol

@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wall -Wextra -pedantic -Wl,--dependency-file=CMakeFiles/crossguard-cli.dir/link.d "CMakeFiles/crossguard-cli.dir/src/main.cpp.o" -o crossguard-cli  libcrossguard.a /usr/lib/libcrypto.so
