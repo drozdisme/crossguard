@@ -36,7 +36,7 @@ sudo apt-get install build-essential cmake
 # macOS
 brew install cmake
 
-git clone https://github.com/YOUR_USERNAME/crossguard
+git clone https://github.com/drozdisme/crossguard
 cd crossguard
 mkdir build && cd build
 cmake ..
