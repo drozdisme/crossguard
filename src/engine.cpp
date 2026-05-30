@@ -14,6 +14,7 @@ Engine::Engine() {
     detectors.push_back(std::make_unique<FeeDetector>());
     detectors.push_back(std::make_unique<CancellationDetector>());
     detectors.push_back(std::make_unique<ReplayRiskDetector>());
+    detectors.push_back(std::make_unique<PayloadLengthDetector>());
 }
 
 AnalysisContext Engine::analyze(const std::string& l1, const std::string& l2) {

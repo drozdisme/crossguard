@@ -9,6 +9,7 @@
 #include "types.hpp"
 #include "cairo_parser.hpp"
 #include "solidity_parser.hpp"
+#include "formatters.hpp"
 
 using namespace crossguard;
 namespace fs = std::filesystem;
@@ -38,7 +39,11 @@ public:
         run("severity_ordering",      [&]{ test_severity_ordering(); });
         run("d1_unit",                [&]{ test_d1_unit(); });
         run("d3_unit",                [&]{ test_d3_unit(); });
+        run("d6_unit",                [&]{ test_d6_unit(); });
         run("type_matching",          [&]{ test_type_matching(); });
+        run("json_output_valid",      [&]{ test_json_output_valid(); });
+        run("sarif_output_valid",     [&]{ test_sarif_output_valid(); });
+        run("terminal_no_color",      [&]{ test_terminal_no_color(); });
 
         if (!fixtures.empty()) {
             run("cairo_parser_real",  [&]{ test_cairo_parser_real(); });
@@ -150,6 +155,114 @@ private:
         TypeMismatchDetector det;
         // Empty graph — no findings
         assert(det.run(Graph()).empty());
+    }
+
+    void test_d6_unit() {
+        // Handler with multiple typed params — Cairo type system enforces arity,
+        // so PayloadLengthDetector should NOT flag it.
+        {
+            Graph g;
+            Handler h;
+            h.location = {"bridge.cairo", 10, 0, "process_deposit"};
+            h.validates_from_address = true;
+            TypeInfo p1; p1.name = "u128"; h.params.push_back(p1);
+            TypeInfo p2; p2.name = "u128"; h.params.push_back(p2);
+            // Supply a non-empty source line that doesn't mention Span<felt252>
+            h.source_lines.push_back("let amount: u256 = u256 { low: amount_low, high: amount_high };");
+            g.add_handler(h);
+
+            PayloadLengthDetector det;
+            // Typed params → safe by construction; detector must not flag
+            auto findings = det.run(g);
+            assert(findings.empty());
+        }
+
+        // Handler with raw Span<felt252> payload and no length check — must be flagged
+        {
+            Graph g;
+            Handler h;
+            h.location = {"bridge.cairo", 30, 0, "handle_raw_payload"};
+            h.validates_from_address = true;
+            TypeInfo p1; p1.name = "felt252"; h.params.push_back(p1);
+            TypeInfo p2; p2.name = "felt252"; h.params.push_back(p2);
+            // Body references Span<felt252> but has no length assertion
+            h.source_lines.push_back("let val = *payload.get(0).unwrap(); // Span<felt252>");
+            g.add_handler(h);
+
+            PayloadLengthDetector det;
+            auto findings = det.run(g);
+            assert(!findings.empty());
+            assert(findings[0].id == "D6");
+            assert(findings[0].severity == Severity::MEDIUM);
+        }
+    }
+
+    void test_json_output_valid() {
+        // Build a small finding set and verify JSON is parseable
+        Location loc; loc.file = "Bridge.sol"; loc.line = 42;
+        loc.selector_or_function = "deposit";
+        Finding f("D3", Severity::HIGH, loc, "Missing fee check", "msg.value not forwarded");
+        f.metadata["function"] = "deposit";
+
+        JsonFormatter fmt;
+        std::string out = fmt.format({f}, {});
+
+        // Must contain required JSON keys
+        assert(out.find("\"findings\"") != std::string::npos);
+        assert(out.find("\"D3\"") != std::string::npos);
+        assert(out.find("\"HIGH\"") != std::string::npos);
+        assert(out.find("\"count\"") != std::string::npos);
+
+        // Braces must be balanced
+        int depth = 0;
+        for (char c : out) {
+            if (c == '{') ++depth;
+            if (c == '}') --depth;
+        }
+        assert(depth == 0);
+    }
+
+    void test_sarif_output_valid() {
+        Location loc; loc.file = "bridge.cairo"; loc.line = 28;
+        loc.selector_or_function = "process_deposit";
+        Finding f("D1", Severity::CRITICAL, loc,
+                  "Missing from_address validation", "Any address can call this handler");
+
+        SarifFormatter fmt;
+        std::string out = fmt.format({f}, {});
+
+        // SARIF 2.1.0 required fields
+        assert(out.find("\"version\": \"2.1.0\"") != std::string::npos);
+        assert(out.find("\"runs\"")  != std::string::npos);
+        assert(out.find("\"rules\"") != std::string::npos);
+        assert(out.find("\"D1\"")    != std::string::npos);
+        assert(out.find("\"error\"") != std::string::npos);
+        assert(out.find("\"security-severity\"") != std::string::npos);
+        // "9.5" expected for CRITICAL
+        assert(out.find("\"9.5\"") != std::string::npos);
+
+        // Braces balanced
+        int depth = 0;
+        for (char c : out) {
+            if (c == '{') ++depth;
+            if (c == '}') --depth;
+        }
+        assert(depth == 0);
+    }
+
+    void test_terminal_no_color() {
+        Location loc; loc.file = "Bridge.sol"; loc.line = 10;
+        Finding f("D4", Severity::HIGH, loc, "Unrestricted cancel", "No access control");
+
+        TerminalFormatter fmt(/*color=*/false);
+        std::string out = fmt.format({f}, {});
+
+        // Must mention severity, id, title
+        assert(out.find("HIGH") != std::string::npos);
+        assert(out.find("D4")   != std::string::npos);
+        assert(out.find("Unrestricted cancel") != std::string::npos);
+        // No ANSI escape codes
+        assert(out.find("\033[") == std::string::npos);
     }
 
     // ── integration tests ─────────────────────────────────────────────────────

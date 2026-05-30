@@ -90,4 +90,18 @@ private:
     bool has_nonce_tracking(const Handler* h) const;
 };
 
+class PayloadLengthDetector : public BaseDetector {
+public:
+    std::string id()          const override { return "D6"; }
+    std::string name()        const override { return "Unchecked payload length"; }
+    std::string description() const override {
+        return "l1_handler decodes payload fields without asserting payload length";
+    }
+    std::vector<Finding> run(const Graph& graph) override;
+
+private:
+    // Returns true if the handler body verifies payload size before field access
+    bool has_payload_length_check(const Handler* h) const;
+};
+
 } 

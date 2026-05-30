@@ -192,28 +192,180 @@ std::unique_ptr<SolidityParser> SolidityParser::load_source(const std::string& f
 }
 
 std::vector<Send> SolidityParser::parse_sends() {
-    if (is_json_format) {
-        // Parse from JSON AST
-        std::vector<Send> sends;
-        // This would require parsing solc's AST JSON format
-        // For now, return empty
-        return sends;
-    } else {
-        // Parse from source
+    if (!is_json_format) {
         auto source_parser = std::make_unique<SoliditySourceParser>();
         source_parser->source = source;
         return source_parser->parse_sends();
     }
+
+    // Parse from solc --ast-json output using our custom nlohmann::json.
+    // Helper: safely get a string field from an object node.
+    auto str_field = [](const nlohmann::json& node, const std::string& key) -> std::string {
+        if (!node.is_object() || !node.contains(key)) return "";
+        const auto& v = node[key];
+        if (v.is_string()) return v.get_string();
+        return "";
+    };
+
+    std::vector<Send> sends;
+    try {
+        // Walk the AST tree recursively collecting sendMessageToL2 calls.
+        std::function<void(const nlohmann::json&, const std::string&, int)> walk;
+        walk = [&](const nlohmann::json& node, const std::string& fn_name, int base_line) {
+            if (!node.is_object()) return;
+
+            std::string nt = str_field(node, "nodeType");
+
+            if (nt == "FunctionCall") {
+                if (node.contains("expression") && node["expression"].is_object()) {
+                    std::string member = str_field(node["expression"], "memberName");
+                    if (member == "sendMessageToL2") {
+                        Send send;
+                        send.selector = std::to_string(std::hash<std::string>{}(fn_name));
+                        send.location.file = "L1";
+                        send.location.line = base_line;
+                        send.location.selector_or_function = fn_name;
+                        // {value: msg.value} shows up as "value" options in solc AST
+                        bool has_value = node.contains("options") ||
+                                         source.find("{value:") != std::string::npos ||
+                                         source.find("{value :") != std::string::npos;
+                        send.has_fee_check = has_value;
+                        sends.push_back(send);
+                    }
+                }
+            }
+
+            // Recurse into object children
+            if (node.is_object()) {
+                for (auto& [key, child] : node.get_object()) {
+                    if (child.is_object()) walk(child, fn_name, base_line);
+                    if (child.is_array()) {
+                        for (size_t i = 0; i < child.size(); ++i)
+                            walk(child[i], fn_name, base_line);
+                    }
+                }
+            }
+        };
+
+        // Find all FunctionDefinition nodes at any depth
+        std::function<void(const nlohmann::json&)> find_fns;
+        find_fns = [&](const nlohmann::json& node) {
+            if (!node.is_object()) return;
+
+            if (str_field(node, "nodeType") == "FunctionDefinition") {
+                std::string fn_name = str_field(node, "name");
+                if (fn_name.empty()) fn_name = "<unknown>";
+                int line = 0;
+                if (node.contains("src") && node["src"].is_string()) {
+                    std::string src_str = node["src"].get_string();
+                    try {
+                        size_t offset = std::stoul(src_str.substr(0, src_str.find(':')));
+                        line = 1 + (int)std::count(source.begin(),
+                                                    source.begin() + std::min(offset, source.size()),
+                                                    '\n');
+                    } catch (...) {}
+                }
+                if (node.contains("body") && node["body"].is_object())
+                    walk(node["body"], fn_name, line);
+                return;
+            }
+
+            for (auto& [key, child] : node.get_object()) {
+                if (child.is_object()) find_fns(child);
+                if (child.is_array()) {
+                    for (size_t i = 0; i < child.size(); ++i) find_fns(child[i]);
+                }
+            }
+        };
+
+        find_fns(ast_data);
+    } catch (const std::exception&) {
+        // Fall back to source-based parsing
+        auto source_parser = std::make_unique<SoliditySourceParser>();
+        source_parser->source = source;
+        return source_parser->parse_sends();
+    }
+    return sends;
 }
 
 std::vector<Cancellation> SolidityParser::parse_cancellations() {
-    if (is_json_format) {
-        return std::vector<Cancellation>();
-    } else {
+    if (!is_json_format) {
         auto source_parser = std::make_unique<SoliditySourceParser>();
         source_parser->source = source;
         return source_parser->parse_cancellations();
     }
+
+    auto str_field = [](const nlohmann::json& node, const std::string& key) -> std::string {
+        if (!node.is_object() || !node.contains(key)) return "";
+        const auto& v = node[key];
+        if (v.is_string()) return v.get_string();
+        return "";
+    };
+
+    std::vector<Cancellation> cancellations;
+    try {
+        std::function<void(const nlohmann::json&, bool, int)> walk;
+        walk = [&](const nlohmann::json& node, bool has_access_ctrl, int line) {
+            if (!node.is_object()) return;
+
+            std::string nt = str_field(node, "nodeType");
+
+            if (nt == "FunctionDefinition") {
+                // Check modifier list
+                bool mod_ctrl = false;
+                if (node.contains("modifiers") && node["modifiers"].is_array()) {
+                    for (size_t i = 0; i < node["modifiers"].size(); ++i) {
+                        const auto& mod = node["modifiers"][i];
+                        std::string mod_name;
+                        if (mod.contains("modifierName"))
+                            mod_name = str_field(mod["modifierName"], "name");
+                        if (mod_name.find("only") != std::string::npos ||
+                            mod_name.find("Owner") != std::string::npos ||
+                            mod_name.find("Admin") != std::string::npos)
+                            mod_ctrl = true;
+                    }
+                }
+                has_access_ctrl = mod_ctrl;
+            }
+
+            // Detect require(msg.sender == ...) by dumping the node as JSON
+            if (nt == "ExpressionStatement" || nt == "FunctionCall") {
+                std::string raw = node.dump();
+                if (raw.find("msg.sender") != std::string::npos &&
+                    (raw.find("require") != std::string::npos ||
+                     raw.find("revert")  != std::string::npos))
+                    has_access_ctrl = true;
+            }
+
+            // Detect the target call
+            if (nt == "FunctionCall" && node.contains("expression") &&
+                node["expression"].is_object()) {
+                std::string member = str_field(node["expression"], "memberName");
+                if (member == "startL1ToL2MessageCancellation") {
+                    Cancellation c;
+                    c.location.file = "L1";
+                    c.location.line = line;
+                    c.has_access_control = has_access_ctrl;
+                    cancellations.push_back(c);
+                }
+            }
+
+            for (auto& [key, child] : node.get_object()) {
+                if (child.is_object()) walk(child, has_access_ctrl, line);
+                if (child.is_array()) {
+                    for (size_t i = 0; i < child.size(); ++i)
+                        walk(child[i], has_access_ctrl, line);
+                }
+            }
+        };
+
+        walk(ast_data, false, 0);
+    } catch (const std::exception&) {
+        auto source_parser = std::make_unique<SoliditySourceParser>();
+        source_parser->source = source;
+        return source_parser->parse_cancellations();
+    }
+    return cancellations;
 }
 
 } 
