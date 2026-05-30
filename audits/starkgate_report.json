@@ -1,0 +1,61 @@
+{
+  "findings": [
+    {
+      "id": "D1",
+      "severity": "CRITICAL",
+      "title": "Missing from_address validation",
+      "description": "Handler does not validate that from_address == registered L1 bridge. Any Ethereum address can call this handler.",
+      "file": "L2",
+      "line": 1014,
+      "function": "handle_token_deposit"
+    },
+    {
+      "id": "D1",
+      "severity": "CRITICAL",
+      "title": "Missing from_address validation",
+      "description": "Handler does not validate that from_address == registered L1 bridge. Any Ethereum address can call this handler.",
+      "file": "L2",
+      "line": 1029,
+      "function": "handle_deposit_with_message"
+    },
+    {
+      "id": "D1",
+      "severity": "CRITICAL",
+      "title": "Missing from_address validation",
+      "description": "Handler does not validate that from_address == registered L1 bridge. Any Ethereum address can call this handler.",
+      "file": "L2",
+      "line": 1067,
+      "function": "handle_token_deployment"
+    },
+    {
+      "id": "D1",
+      "severity": "CRITICAL",
+      "title": "Missing from_address validation",
+      "description": "Handler does not validate that from_address == registered L1 bridge. Any Ethereum address can call this handler.",
+      "file": "L2",
+      "line": 995,
+      "function": "handle_deposit"
+    },
+    {
+      "id": "D4",
+      "severity": "HIGH",
+      "title": "Unrestricted message cancellation",
+      "description": "startL1ToL2MessageCancellation without access control. Anyone can cancel pending messages after L2 processing.",
+      "file": "L1",
+      "line": 524,
+      "function": ""
+    },
+    {
+      "id": "D4",
+      "severity": "HIGH",
+      "title": "Unrestricted message cancellation",
+      "description": "startL1ToL2MessageCancellation without access control. Anyone can cancel pending messages after L2 processing.",
+      "file": "L1",
+      "line": 543,
+      "function": ""
+    }
+  ],
+  "errors": [
+  ],
+  "count": 6
+}
